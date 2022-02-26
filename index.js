@@ -1,9 +1,12 @@
 const inquirer = require('inquirer');
+const util = require('util');
 require('dotenv').config();
 
 const db = require("./db/conn.js");
 let staffList, roleList, deptList;
 let cancel = false;
+const Table = require('easy-table');
+const { json } = require('express');
 
 
 
@@ -11,7 +14,8 @@ let cancel = false;
 async function allStaff (){
     const q = `SELECT concat(fname," ",lname) as Name 
                 FROM employee`;
-    staffList = db.promise().query(q);
+    [rows,fields] = await db.promise().query(q);
+    staffList = rows;
     return staffList;
 }
 
@@ -19,17 +23,25 @@ async function allRoles (){
 
     const q = `SELECT title as Title, concat("$",salary) as Salary 
                 FROM role`;
-    roleList = db.promise().query(q);
-    console.log(roleList);
+    [rows,fields] = await db.promise().query(q);
+    roleList = rows;
     return roleList;
 }
 
-function allDept (){
-    const q = `SELECT name 
+async function allDept (){
+    let t;
+    const q = `SELECT name, concat("$",budget) as budget
                 FROM department`;
-    return db.promise().query(q);
-    // return deptList;
-}
+    [rows,fields] = await db.promise().query(q);
+
+    deptList = rows;
+    return deptList;
+        
+        
+};
+
+
+
 
 ///////////////////////////////////////
 function staffInRole (role){
@@ -74,44 +86,7 @@ const addStuff = () => {
             ],
             name: 'toAdd',
         },
-        // If user selects Employee
-        {
-            type: "input",
-            message: " What is their \x1b[32mFirst\x1b[0m name?",
-            name: "fname",
-            when: (answers) => answers.toAdd == "Employee",
-            validate(answer) {
-                if(!answer) {
-                    return "Their first name, what is it?"
-                }
-                return true
-            }
-        },
-        {
-            type: "input",
-
-            name: "lname",
-            when: (answers) => answers.fname,
-            message(answers) {return `What is ${answers.fname}'s \x1b[32mLast\x1b[0m name?`;},
-            validate(answer) {
-                if(!answer) {
-                    return "Their last name, what is it?"
-                }
-                return true
-            }
-        },
-        {
-            type: "confirm",
-            name: "name",
-            when: (answers) => answers.lname,
-            message(answers) { return `\x1b[35mConfirm:\x1b[0m Add ${answers.fname} ${answers.lname} as an employee?`;},
-            validate(answer) {
-                if(!answer) {
-                    return "Yes or no?"
-                }
-                return true
-            }
-        },
+        
         // If user selects Department
         {
             type: "input",
@@ -164,6 +139,54 @@ const addStuff = () => {
         },
     ])
 }
+const addEmployee = (staff,roles) => {
+    return inquirer.prompt([
+        // If user selects Employee
+        {
+            type: "input",
+            message: "What is their \x1b[32mFirst\x1b[0m name?",
+            name: "fname",
+            // when: (answers) => answers.toAdd == "Employee",
+            validate(answer) {
+                if(!answer) {
+                    return "Their first name, what is it?"
+                }
+                return true
+            }
+        },
+        {
+            type: "input",
+
+            name: "lname",
+            when: (answers) => answers.fname,
+            message(answers) {return `What is ${answers.fname}'s \x1b[32mLast\x1b[0m name?`;},
+            validate(answer) {
+                if(!answer) {
+                    return "Their last name, what is it?"
+                }
+                return true
+            }
+        },
+
+        {
+            type: "list",
+            name: "role",
+            when: (answers) => answers.lname,
+            message(answers) { return `What will ${answers.fname} ${answers.lname}'s \x1b[35mrole\x1b[0m?`;},
+            choices: roles,
+        },
+        {
+            type: "list",
+            name: "man",
+            when: (answers) => answers.role,
+            message(answers) { return `Who will be the \x1b[35mmanager\x1b[0m of ${answers.fname} ${answers.lname}?`;},
+            choices: staff,
+        },
+
+    ])
+}
+
+
 function viewStuff(){
     return inquirer.prompt([
         {
@@ -179,7 +202,7 @@ function viewStuff(){
         },
     ])
 }
-0
+
 
 async function toDo_f(){
 
@@ -202,13 +225,52 @@ async function toDo_f(){
         return;
     }else if(todo.todo == "Add something"){
 
-        let add = await addStuff();
+        const add = await addStuff();
+        let loop, len;
+
 
         if(add.toAdd == "Cancel"){
             return;
         }else if(add.toAdd == "Employee"){
-            // let x = await allStaff();
-            // console.log(x);
+            const manList = await allStaff();
+
+            console.log(manList);
+            len = manList.length;
+            loop = 0;
+            let manArr = [];
+            while(loop < len){
+                manArr.push(manList[loop].Name);
+                loop++;
+            };
+            const roleList = await allRoles();
+            len = roleList.length;
+            loop = 0;
+            let roleArr = [];
+            while(loop < len){
+                roleArr.push(roleList[loop].Title);
+                loop++;
+            };
+            const newEmp = await addEmployee(manList, roleArr);
+            inquirer.prompt([
+                {
+                    type: "confirm",
+                    name: "confEmp",
+                    message: `\x1b[35mDo you wish to add:\x1b[0m \nEmployee: ${newEmp.fname} ${newEmp.lname} \nRole: ${newEmp.role} \nManaged by: ${newEmp.man}?`,
+                    validate(answer) {
+                        if(!answer) {
+                            return "Yes or no?"
+                        }
+                        return true
+                    }
+                },
+            ])
+            const empRole = db.query("SELECT id FROM role WHERE title = ?",newEmp.role);
+            // const empMan = db.query("SELECT id FROM mployee WHERE title = ?",newEmp.role)
+            const values = {fname: newEmp.fname, lname: newEmp.lname,role_id: empRole,manager_id:12};
+            db.query("INSERT INTO employee SET ?",values,function(err,res){
+                if(err) throw err;
+            })
+
         }else if(add.toAdd == "Department"){
             // let x = await allDept();
             // console.log(x);
@@ -231,7 +293,16 @@ async function toDo_f(){
             let x = await allDept();
             console.log(x);
         }else if(view.toView == "All Roles"){
+
             let x = await allRoles();
+
+            // let t = new Table();
+            // x.forEach(function (role) {
+            //     t.cell('Department Name', role.name),
+            //     t.cell('Budget', role.budget),
+            //     t.newRow()
+            // })
+            // console.log(t);
             console.log(x);
         }
         return;

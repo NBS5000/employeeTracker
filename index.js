@@ -61,22 +61,109 @@ function staffManagedBy (manager){
 
 
 
-// const addQuestions = () => {
-//     return inquirer.prompt([
-//         {
-//             type: "list",
-//             message: "What would you like to add?",
-//             choices: [
-//                 "Employee",
-//                 "Role",
-//                 "Department",
-//                 "Cancel",
-//             ],
-//             name: 'toAdd',
-//         },
+const addStuff = () => {
+    return inquirer.prompt([
+        {
+            type: "list",
+            message: "What would you like to add?",
+            choices: [
+                "Employee",
+                "Role",
+                "Department",
+                "Cancel",
+            ],
+            name: 'toAdd',
+        },
+        // If user selects Employee
+        {
+            type: "input",
+            message: " What is their \x1b[32mFirst\x1b[0m name?",
+            name: "fname",
+            when: (answers) => answers.toAdd == "Employee",
+            validate(answer) {
+                if(!answer) {
+                    return "Their first name, what is it?"
+                }
+                return true
+            }
+        },
+        {
+            type: "input",
 
-//     ])
-// }
+            name: "lname",
+            when: (answers) => answers.fname,
+            message(answers) {return `What is ${answers.fname}'s \x1b[32mLast\x1b[0m name?`;},
+            validate(answer) {
+                if(!answer) {
+                    return "Their last name, what is it?"
+                }
+                return true
+            }
+        },
+        {
+            type: "confirm",
+            name: "name",
+            when: (answers) => answers.lname,
+            message(answers) { return `\x1b[35mConfirm:\x1b[0m Add ${answers.fname} ${answers.lname} as an employee?`;},
+            validate(answer) {
+                if(!answer) {
+                    return "Yes or no?"
+                }
+                return true
+            }
+        },
+        // If user selects Department
+        {
+            type: "input",
+            message: " What is the \x1b[32mDepartment\x1b[0m name?",
+            name: "dept",
+            when: (answers) => answers.toAdd == "Department",
+            validate(answer) {
+                if(!answer) {
+                    return "The department name, what is it?"
+                }
+                return true
+            }
+        },
+        {
+            type: "input",
+            message: (answers) => {`What is ${answers.dept}'s budget?`},
+            name: "budget",
+            when: (answers) => answers.dept === true,
+            validate(answer) {
+                if(!answer) {
+                    return "Their budget, what is it?"
+                }
+                return true
+            }
+        },
+        // If user selects Role
+        {
+            type: "input",
+            message: " What is the \x1b[32mname\x1b[0m of the Role?",
+            name: "role",
+            when: (answers) => answers.toAdd == "Role",
+            validate(answer) {
+                if(!answer) {
+                    return "The department name, what is it?"
+                }
+                return true
+            }
+        },
+        {
+            type: "number",
+            message: (answers) => {`What is the salary for: ${answers.dept}?`},
+            name: "budget",
+            when: (answers) => answers.role === true,
+            validate(answer) {
+                if(!answer) {
+                    return "The salary, what is it?"
+                }
+                return true
+            }
+        },
+    ])
+}
 function viewStuff(){
     return inquirer.prompt([
         {
@@ -113,9 +200,23 @@ async function toDo_f(){
     if(todo.todo == "Exit"){
         cancel = true;
         return;
-    // }else if(todo.todo == "Add something"){
+    }else if(todo.todo == "Add something"){
 
+        let add = await addStuff();
 
+        if(add.toAdd == "Cancel"){
+            return;
+        }else if(add.toAdd == "Employee"){
+            // let x = await allStaff();
+            // console.log(x);
+        }else if(add.toAdd == "Department"){
+            // let x = await allDept();
+            // console.log(x);
+        }else if(add.toAdd == "Role"){
+            // let x = await allRoles();
+            // console.log(x);
+        }
+        return;
 
     }else if(todo.todo == "View details"){
 

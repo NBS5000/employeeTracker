@@ -1,52 +1,39 @@
 const inquirer = require('inquirer');
-const questions = require('.assets/js/questions.js');
-
-// Import and require mysql2
-const mysql = require('mysql2');
-// Apply .env config
 require('dotenv').config();
 
-// Connect to database
-const db = mysql.createConnection(
-    {
-        host: 'localhost',
-        // MySQL username,
-        user: 'root',
-        // MySQL password - get from .env file or use default
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME
-    },
-    console.log(`Connected to the employee_db database.`)
-  );
+const db = require("./db/conn.js");
+let staffList, roleList, deptList;
+let cancel = false;
 
 
 
 // WHOLE TABLE LIST
-function allStaff (){
+async function allStaff (){
     const q = `SELECT concat(fname," ",lname) as Name 
                 FROM employee`;
-
-    return q;
+    staffList = db.promise().query(q);
+    return staffList;
 }
 
-function allRoles (){
+async function allRoles (){
 
-    const q = `SELECT title 
+    const q = `SELECT title as Title, concat("$",salary) as Salary 
                 FROM role`;
-
-    return q;
+    roleList = db.promise().query(q);
+    console.log(roleList);
+    return roleList;
 }
 
 function allDept (){
     const q = `SELECT name 
                 FROM department`;
-
-    return q;
+    return db.promise().query(q);
+    // return deptList;
 }
 
 ///////////////////////////////////////
 function staffInRole (role){
-    const q = `SELECT concat(fname," ",lname) as Name 
+    const q = `SELECT concat(fname," ",lname) as Name
                 FROM employee as e
                 INNER JOIN role as r ON e.role_id = r.id
                 WHERE r.title = ${role}`;
@@ -60,7 +47,7 @@ function staffInDept (dept){
                 INNER JOIN role as r ON e.role_id = r.id
                 WHERE r.department_id = ?`;
                 
-    return q;
+    return;
 }
 
 function staffManagedBy (manager){
@@ -74,9 +61,42 @@ function staffManagedBy (manager){
 
 
 
+// const addQuestions = () => {
+//     return inquirer.prompt([
+//         {
+//             type: "list",
+//             message: "What would you like to add?",
+//             choices: [
+//                 "Employee",
+//                 "Role",
+//                 "Department",
+//                 "Cancel",
+//             ],
+//             name: 'toAdd',
+//         },
 
-const toDoQuestion = () => {
+//     ])
+// }
+function viewStuff(){
     return inquirer.prompt([
+        {
+            type: "list",
+            message: "What would you like to view?",
+            choices: [
+                "All Employees",
+                "All Roles",
+                "All Departments",
+                "Cancel",
+            ],
+            name: 'toView',
+        },
+    ])
+}
+0
+
+async function toDo_f(){
+
+    const todo = await inquirer.prompt([
         {  
             type: "list",
             message: "What would you like to do?",
@@ -88,36 +108,65 @@ const toDoQuestion = () => {
                 "Exit",
             ],
             name: 'todo',
-        },
-    ])
-};
+        }
+    ]);
+    if(todo.todo == "Exit"){
+        cancel = true;
+        return;
+    // }else if(todo.todo == "Add something"){
 
-const addQuestions = () => {
-    return inquirer.prompt([
-        {
-            type: "list",
-            message: "What would you like to add?",
-            choices: [
-                "Employee",
-                "Role",
-                "Department",
-                "Cancel",
-            ],
-            name: 'toAdd',
-        },
-        {
-            // If previous answer was yes, then ask for details of the image
-            type: "list",
-            message: "What is their first name?",
-            name: "fname",
-            when: (answers) => answers.todo == "An employee",
-        },
-        {
-            // If previous answer was yes, then ask for details of the image
-            type: "list",
-            message: "What is their last name?",
-            name: "lname",
-            when: (answers) => answers.fname === true,
-        },
-    ])
+
+
+    }else if(todo.todo == "View details"){
+
+        let view = await viewStuff();
+
+        if(view.toView == "Cancel"){
+            return;
+        }else if(view.toView == "All Employees"){
+            let x = await allStaff();
+            console.log(x);
+        }else if(view.toView == "All Departments"){
+            let x = await allDept();
+            console.log(x);
+        }else if(view.toView == "All Roles"){
+            let x = await allRoles();
+            console.log(x);
+        }
+        return;
+
+    // }else if(todo.todo == "Update something"){
+
+    // }else if(todo.todo == "Delete something"){
+
+    }
+
 }
+
+async function begin() {
+
+    console.info(`
+    .---------------------------------------------------.
+    |  \x1b[33m _        _       _                          _\x1b[0m   |
+    |  \x1b[33m| |      | | ___ | | __  ____  _ __ _  ___  | |\x1b[0m  |
+    |  \x1b[33m\\ \\  __  / /  _ \\| |/ _)/  _ \\| '  ' \\/ _ \\ |_|\x1b[0m  |
+    |  \x1b[33m \\ \\/  \\/ /|  __/| | (_ | (_) | | |  |  __/  _\x1b[0m   |
+    |  \x1b[33m  \\__/\\__/  \\___||_|\\__)\\____/|_|_|__|\\___| |_|\x1b[0m  |
+    |                                                   |
+    |                 To \x1b[33mStar Wars\x1b[0m pty                  |
+    '---------------------------------------------------'
+    
+    `);
+
+    while(!cancel){   
+        await toDo_f();
+
+
+    }
+    process.exit();
+
+
+
+}
+
+begin();

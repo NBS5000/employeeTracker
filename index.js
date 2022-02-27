@@ -23,8 +23,9 @@ async function allStaff (){
 
 async function allRoles (){
 
-    const q = `SELECT title as Title, concat("$",salary) as Salary 
-                FROM role`;
+    const q = `SELECT r.title as Title, concat("$",r.salary) as Salary, d.name as Department
+                FROM role as r
+                INNER JOIN department as d ON r.department_id = d.id`;
     [rows,fields] = await db.promise().query(q);
     roleList = rows;
     return roleList;
@@ -854,6 +855,52 @@ async function toDo_f(){
                     let upNewName = upRTitle.name;
                     try{
                         await db.promise().query("UPDATE role SET title = ? WHERE id = ?",[upNewName,roleUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+                return;
+            }else if(upRole.select == "Department"){
+
+                const dList = await allDept();
+
+                len = dList.length;
+                loop = 0;
+                let dArr = [];
+                while(loop < len){
+                    dArr.push(dList[loop].name);
+                    loop++;
+                };
+                const upRoleDept = await inquirer.prompt([
+                    {
+                        type: "list",
+                        name: "dep",
+                        message: `Which department would you like to move the role of ${upRole.role} to?`,
+                        choices: dArr,
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Move \x1b[35m${upRole.role}\x1b[0m to ${answers.dep}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+                if(upRoleDept.conf == "no" || upRoleDept.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,upRole.role);
+                    let roleUpId = parseInt(rows[0].id);
+                    [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,upRoleDept.dep);
+                    let newRoleDept = parseInt(rows[0].id);
+                    try{
+                        await db.promise().query("UPDATE role SET department_id = ? WHERE id = ?",[newRoleDept,roleUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)

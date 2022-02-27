@@ -72,6 +72,21 @@ function staffManagedBy (manager){
 }
 
 
+const updateStuff = () => {
+    return inquirer.prompt([
+        {
+            type: "list",
+            message: "What would you like to update?",
+            choices: [
+                "Employee",
+                "Role",
+                "Department",
+                "Cancel",
+            ],
+            name: 'toUpdate',
+        },
+    ])
+}
 
 const addStuff = () => {
     return inquirer.prompt([
@@ -88,6 +103,7 @@ const addStuff = () => {
         },
     ])
 }
+
 const addRole = (deptList) => {
     return inquirer.prompt([
         {
@@ -392,12 +408,131 @@ async function toDo_f(){
         }
         return;
 
-    // }else if(todo.todo == "Update something"){
+    }else if(todo.todo == "Update something"){
+        let update = await updateStuff();
+
+        if(update.toUpdate == "Cancel"){
+            return;
+        }else if(update.toUpdate == "Employee"){
+            const updEmpList = await allStaff();
+
+            len = updEmpList.length;
+            loop = 0;
+            let empArr = [];
+            while(loop < len){
+                empArr.push(updEmpList[loop].Name);
+                loop++;
+            };
+
+            const selectEmp = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "emp",
+                    message: "Who would you like to update?",
+                    choices: empArr,
+                },
+                {
+                    type: "list",
+                    name: "empUp",
+                    when: (answers) => answers.emp,
+                    message(answers) { return `Which element of \x1b[35m${answers.emp}\x1b[0m do you wish to update?`;},
+                    choices: [
+                        "First name",
+                        "Last name",
+                        "Their role",
+                        "Their manager",
+                        "Cancel",
+                    ]
+                },
+            ]);
+
+            if(selectEmp.empUp == "Cancel"){
+                return;
+            }else if(selectEmp.empUp == "First name"){
+                const upFName = await inquirer.prompt([
+                    {
+                        type: "input",
+                        name: "upfname",
+                        message: `What would you like to update ${selectEmp.emp} to?`,
+                        validate(answer) {
+                            if(!answer) {
+                                return "What is their new first name?"
+                            }
+                            return true
+                        }
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}\x1b[0m to ${answers.upfname}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+
+
+                if(upFName.conf == "no" || upFName.conf === false){
+
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
+                    let empUpId = parseInt(rows[0].id);
+                    let upNewName = upFName.upfname;
+                    // const values = `[${}, ${}]`;
+                    try{
+                        await db.promise().query("UPDATE employee SET fname = ? WHERE id = ?",[upNewName,empUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+                return;
+
+            }else if(selectEmp.empUp == "Last name"){
+
+
+
+            }else if(selectEmp.empUp == "Their role"){
+
+
+
+            }else if(selectEmp.empUp == "Their manager"){
+
+
+
+            }
+
+
+
+
+
+
+
+
+            // let x = await allStaff();
+            // console.log(x);
+        }else if(update.toUpdate == "A Department"){
+            let x = await allDept();
+            console.log(x);
+        }else if(update.toUpdate == "A Role"){
+
+            let x = await allRoles();
+
+
+
+
+
 
     // }else if(todo.todo == "Delete something"){
 
     }
-
+    }
 }
 
 async function begin() {

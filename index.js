@@ -19,7 +19,7 @@ async function allStaff (){
     [rows,fields] = await db.promise().query(q);
     staffList = rows;
     return staffList;
-}
+};
 
 async function allRoles (){
 
@@ -28,7 +28,7 @@ async function allRoles (){
     [rows,fields] = await db.promise().query(q);
     roleList = rows;
     return roleList;
-}
+};
 
 async function allDept (){
     let t;
@@ -481,7 +481,7 @@ async function toDo_f(){
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
                     let upNewName = upFName.upfname;
-                    // const values = `[${}, ${}]`;
+                    
                     try{
                         await db.promise().query("UPDATE employee SET fname = ? WHERE id = ?",[upNewName,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
@@ -523,7 +523,7 @@ async function toDo_f(){
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
                     let upNewName = upLName.uplname;
-                    // const values = `[${}, ${}]`;
+                    
                     try{
                         await db.promise().query("UPDATE employee SET lname = ? WHERE id = ?",[upNewName,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
@@ -573,7 +573,7 @@ async function toDo_f(){
 
                     [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,upRole.uprole );
                     let newRoleId = parseInt(rows[0].id);
-                    // const values = `[${}, ${}]`;
+                    
                     try{
                         await db.promise().query("UPDATE employee SET role_id = ? WHERE id = ?",[newRoleId,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
@@ -617,7 +617,7 @@ async function toDo_f(){
 
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,upMan.man );
                     let manUpId = parseInt(rows[0].id);
-                    // const values = `[${}, ${}]`;
+                    
                     try{
                         await db.promise().query("UPDATE employee SET manager_id = ? WHERE id = ?",[manUpId,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
@@ -627,41 +627,250 @@ async function toDo_f(){
 
                 }
                 return;
+            }
+        }else if(update.toUpdate == "Department"){
+
+            const dList = await allDept();
+
+            len = dList.length;
+            loop = 0;
+            let eArr = [];
+            while(loop < len){
+                eArr.push(dList[loop].name);
+                loop++;
+            };
+            const upDept = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "dep",
+                    message: "Which department would you like to update?",
+                    choices: eArr,
+                },
+                {
+                    type: "list",
+                    name: "select",
+                    message(answers) { return `What would you like to update about \x1b[35m${answers.dep}\x1b[0m?`;},
+                    choices: [
+                        "Name",
+                        "Budget",
+                        "Cancel",
+                    ],
+                },
+            ]);
 
 
+            if(upDept.select == "Cancel"){
+                return;
+            }else if(upDept.select == "Budget"){
+                const upDBud = await inquirer.prompt([
+                    {
+                        type: "input",
+                        name: "bud",
+                        message: `What would you like to update ${upDept.dep}'s budget to?`,
+                        validate(answer) {
+                            if(isNaN(answer)){
+                                return "Enter a number, with no letters or other characters";
+            
+                            }else if(!answer) {
+                                return "Their new budget, what is it?"
+                            }
+                            return true
+                        }
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${upDept.dep}\x1b[0m's budget to ${answers.bud}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+                if(upDBud.conf == "no" || upDBud.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,upDept.dep);
+                    let depUpId = parseInt(rows[0].id);
+                    let upNewBud = upDBud.bud;
+                    try{
+                        await db.promise().query("UPDATE department SET budget = ? WHERE id = ?",[upNewBud,depUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+            }else if(upDept.select == "Name"){
+                const upDName = await inquirer.prompt([
+                    {
+                        type: "input",
+                        name: "name",
+                        message: `What would you like to update ${upDept.dep}'s name to?`,
+                        validate(answer) {
+                            if(!answer) {
+                                return "What is their new name?"
+                            }
+                            return true
+                        }
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${upDept.dep}\x1b[0m's name to ${answers.name}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+                if(upDName.conf == "no" || upDName.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,upDept.dep);
+                    let depUpId = parseInt(rows[0].id);
+                    let upNewName = upDName.name;
+                    try{
+                        await db.promise().query("UPDATE department SET name = ? WHERE id = ?",[upNewName,depUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+
+                return;
+            }
+        }else if(update.toUpdate == "Role"){
+            const rList = await allRoles();
+            
+            len = rList.length;
+            loop = 0;
+            let rArr = [];
+            while(loop < len){
+                rArr.push(rList[loop].Title);
+                loop++;
+            };
+            console.log(rArr);
+            const upRole = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "role",
+                    message: "Which role would you like to update?",
+                    choices: rArr,
+                },
+                {
+                    type: "list",
+                    name: "select",
+                    message(answers) { return `What would you like to update about the \x1b[35m${answers.role}\x1b[0m role?`;},
+                    choices: [
+                        "Title",
+                        "Salary",
+                        "Department",
+                        "Cancel",
+                    ],
+                },
+            ]);
 
 
+            if(upRole.select == "Cancel"){
+                return;
+            }else if(upRole.select == "Salary"){
+                const upRSal = await inquirer.prompt([
+                    {
+                        type: "input",
+                        name: "sal",
+                        message: `What would you like to update ${upRole.role}'s salary to?`,
+                        validate(answer) {
+                            if(isNaN(answer)){
+                                return "Enter a number, with no letters or other characters";
+            
+                            }else if(!answer) {
+                                return "Their new salary, what is it?"
+                            }
+                            return true
+                        }
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${upRole.role}'s\x1b[0m salary to ${answers.sal}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+                if(upRSal.conf == "no" || upRSal.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,upRole.role);
+                    let roleUpId = parseInt(rows[0].id);
+                    let upNewSal = parseInt(upRSal.sal);
+                    try{
+                        await db.promise().query("UPDATE role SET salary = ? WHERE id = ?",[upNewSal,roleUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
 
+                }
+            }else if(upRole.select == "Title"){
+                const upRTitle = await inquirer.prompt([
+                    {
+                        type: "input",
+                        name: "name",
+                        message: `What would you like to update ${upRole.role}'s title to?`,
+                        validate(answer) {
+                            if(!answer) {
+                                return "What is the new title?"
+                            }
+                            return true
+                        }
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${upRole.role}\x1b[0m's name to ${answers.name}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+                if(upRTitle.conf == "no" || upRTitle.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,upRole.role);
+                    let roleUpId = parseInt(rows[0].id);
+                    let upNewName = upRTitle.name;
+                    try{
+                        await db.promise().query("UPDATE role SET title = ? WHERE id = ?",[upNewName,roleUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
 
-
+                }
+                return;
             }
 
+        }
 
 
+    }else if(todo.todo == "Delete something"){
 
-
-
-
-
-            // let x = await allStaff();
-            // console.log(x);
-        }else if(update.toUpdate == "A Department"){
-            let x = await allDept();
-            console.log(x);
-        }else if(update.toUpdate == "A Role"){
-
-            let x = await allRoles();
-
-
-
-
-
-
-    // }else if(todo.todo == "Delete something"){
-
-    }
     }
 }
+
 
 async function begin() {
 

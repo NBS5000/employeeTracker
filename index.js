@@ -86,57 +86,68 @@ const addStuff = () => {
             ],
             name: 'toAdd',
         },
-        
-        // If user selects Department
+    ])
+}
+const addRole = () => {
+    return inquirer.prompt([
         {
             type: "input",
-            message: " What is the \x1b[32mDepartment\x1b[0m name?",
-            name: "dept",
-            when: (answers) => answers.toAdd == "Department",
+            message: "What is the \x1b[32mName\x1b[0m of the role?",
+            name: "rname",
             validate(answer) {
                 if(!answer) {
-                    return "The department name, what is it?"
+                    return "The role name, what is it?"
                 }
                 return true
             }
         },
         {
             type: "input",
-            message: (answers) => {`What is ${answers.dept}'s budget?`},
-            name: "budget",
-            when: (answers) => answers.dept === true,
+            name: "salary",
+            when: (answers) => answers.rname,
+            message(answers) {return `What is the \x1b[32msalary\x1b[0m for the position of ${answers.rname}?`;},
             validate(answer) {
-                if(!answer) {
-                    return "Their budget, what is it?"
-                }
-                return true
-            }
-        },
-        // If user selects Role
-        {
-            type: "input",
-            message: " What is the \x1b[32mname\x1b[0m of the Role?",
-            name: "role",
-            when: (answers) => answers.toAdd == "Role",
-            validate(answer) {
-                if(!answer) {
-                    return "The department name, what is it?"
-                }
-                return true
-            }
-        },
-        {
-            type: "number",
-            message: (answers) => {`What is the salary for: ${answers.dept}?`},
-            name: "budget",
-            when: (answers) => answers.role === true,
-            validate(answer) {
-                if(!answer) {
+                if(isNaN(answer)){
+                    return "Enter a number, with no letters or other characters";
+
+                }else if(!answer) {
                     return "The salary, what is it?"
                 }
                 return true
             }
         },
+
+    ])
+}
+const addDept = () => {
+    return inquirer.prompt([
+        {
+            type: "input",
+            message: "What is the \x1b[32mName\x1b[0m of the department?",
+            name: "dname",
+            validate(answer) {
+                if(!answer) {
+                    return "The department name, what is it?"
+                }
+                return true
+            }
+        },
+        {
+            type: "input",
+            name: "budget",
+            when: (answers) => answers.dname,
+            message(answers) {return `What is the \x1b[32mbudget\x1b[0m for the ${answers.dname} department?`;},
+            validate(answer) {
+                if(isNaN(answer)){
+                    return "Enter a number, with no letters or other characters";
+
+                }else if(!answer) {
+                    return "Their budget, what is it?"
+                }
+                return true
+            }
+        },
+
     ])
 }
 const addEmployee = (staff,roles) => {
@@ -146,7 +157,6 @@ const addEmployee = (staff,roles) => {
             type: "input",
             message: "What is their \x1b[32mFirst\x1b[0m name?",
             name: "fname",
-            // when: (answers) => answers.toAdd == "Employee",
             validate(answer) {
                 if(!answer) {
                     return "Their first name, what is it?"
@@ -281,8 +291,33 @@ async function toDo_f(){
                 console.log(`${newEmp.fname} ${newEmp.lname} was \x1b[31mnot\x1b[0m added\n`)
             }
         }else if(add.toAdd == "Department"){
-            // let x = await allDept();
-            // console.log(x);
+
+            const newDept = await addDept();
+            const addConfDept = await inquirer.prompt([
+                {
+                    type: "confirm",
+                    name: "confDept",
+                    message: `\x1b[35mDo you wish to add:\x1b[0m \n\x1b[34mDepartment:\x1b[0m ${newDept.dname} \n\x1b[34mBudget:\x1b[0m ${newDept.budget}?`,
+                    validate(answer) {
+                        if(!answer) {
+                            return "Yes or no?"
+                        }
+                        return true
+                    }
+                },
+            ])
+            if(addConfDept.confDept == "Yes" || addConfDept.confDept === true){
+
+                const values = {name: newDept.dname, budget: newDept.budget};
+                try{
+                    await db.promise().query("INSERT INTO department SET ?",values);
+                    console.log(`${newDept.dname} was \x1b[32msuccessfully\x1b[0m added\n`);
+                }catch{
+                    console.log(`${newDept.dname} was \x1b[31mnot\x1b[0m added: ${err}\n`);
+                }
+            }else{
+                console.log(`${newDept.dname} was \x1b[31mnot\x1b[0m added\n`);
+            }
         }else if(add.toAdd == "Role"){
             // let x = await allRoles();
             // console.log(x);
@@ -307,8 +342,8 @@ async function toDo_f(){
 
             // let t = new Table();
             // x.forEach(function (role) {
-            //     t.cell('Department Name', role.name),
-            //     t.cell('Budget', role.budget),
+            //     t.cell('Title', role.Title),
+            //     t.cell('Salary', role.Salary),
             //     t.newRow()
             // })
             // console.log(t);

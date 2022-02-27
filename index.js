@@ -88,7 +88,7 @@ const addStuff = () => {
         },
     ])
 }
-const addRole = () => {
+const addRole = (deptList) => {
     return inquirer.prompt([
         {
             type: "input",
@@ -116,7 +116,13 @@ const addRole = () => {
                 return true
             }
         },
-
+        {
+            type: "list",
+            name: "dept",
+            when: (answers) => answers.salary,
+            message(answers) { return `Which \x1b[35mdepartment\x1b[0m will the ${answers.rname} belong to??`;},
+            choices: deptList,
+        },
     ])
 }
 const addDept = () => {
@@ -284,7 +290,7 @@ async function toDo_f(){
                 try{
                     await db.promise().query("INSERT INTO employee SET ?",values)
                     console.log(`${newEmp.fname} ${newEmp.lname} was \x1b[32msuccessfully\x1b[0m added\n`)
-                }catch{
+                }catch(err){
                     console.log(`${newEmp.fname} ${newEmp.lname} was \x1b[31mnot\x1b[0m added: ${err}\n`)
                 }
             }else{
@@ -312,15 +318,50 @@ async function toDo_f(){
                 try{
                     await db.promise().query("INSERT INTO department SET ?",values);
                     console.log(`${newDept.dname} was \x1b[32msuccessfully\x1b[0m added\n`);
-                }catch{
+                }catch(err){
                     console.log(`${newDept.dname} was \x1b[31mnot\x1b[0m added: ${err}\n`);
                 }
             }else{
                 console.log(`${newDept.dname} was \x1b[31mnot\x1b[0m added\n`);
             }
         }else if(add.toAdd == "Role"){
-            // let x = await allRoles();
-            // console.log(x);
+            const dList = await allDept();
+
+            len = dList.length;
+            loop = 0;
+            let dArr = [];
+            while(loop < len){
+                dArr.push(dList[loop].name);
+                loop++;
+            };
+            const newRole = await addRole(dArr);
+            const addConfRole = await inquirer.prompt([
+                {
+                    type: "confirm",
+                    name: "confRole",
+                    message: `\x1b[35mDo you wish to add:\x1b[0m \n\x1b[34mRole Name:\x1b[0m ${newRole.rname} \n\x1b[34mSalary:\x1b[0m ${newRole.salary} \n\x1b[34mDepartment:\x1b[0m ${newRole.dept}?`,
+                    validate(answer) {
+                        if(!answer) {
+                            return "Yes or no?"
+                        }
+                        return true
+                    }
+                },
+            ])
+            if(addConfRole.confRole == "Yes" || addConfRole.confRole === true){
+                [rows,fields] = await db.promise().query("SELECT id FROM department WHERE name = ?",newRole.dept);
+                let newDeptAdd = parseInt(rows[0].id);
+
+                const values = {title: newRole.rname,salary: newRole.salary,department_id:newDeptAdd};
+                try{
+                    await db.promise().query("INSERT INTO role SET ?",values)
+                    console.log(`${newRole.rname} was \x1b[32msuccessfully\x1b[0m added\n`)
+                }catch(err){
+                    console.log(`${newRole.rname} was \x1b[31mnot\x1b[0m added: ${err}\n`)
+                }
+            }else{
+                console.log(`${newRole.rname} was \x1b[31mnot\x1b[0m added\n`)
+            }
         }
         return;
 

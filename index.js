@@ -234,7 +234,6 @@ async function toDo_f(){
         }else if(add.toAdd == "Employee"){
             const manList = await allStaff();
 
-            console.log(manList);
             len = manList.length;
             loop = 0;
             let manArr = [];
@@ -243,6 +242,7 @@ async function toDo_f(){
                 loop++;
             };
             const roleList = await allRoles();
+
             len = roleList.length;
             loop = 0;
             let roleArr = [];
@@ -250,12 +250,12 @@ async function toDo_f(){
                 roleArr.push(roleList[loop].Title);
                 loop++;
             };
-            const newEmp = await addEmployee(manList, roleArr);
-            inquirer.prompt([
+            const newEmp = await addEmployee(manArr, roleArr);
+            const addConfEmp = await inquirer.prompt([
                 {
                     type: "confirm",
                     name: "confEmp",
-                    message: `\x1b[35mDo you wish to add:\x1b[0m \nEmployee: ${newEmp.fname} ${newEmp.lname} \nRole: ${newEmp.role} \nManaged by: ${newEmp.man}?`,
+                    message: `\x1b[35mDo you wish to add:\x1b[0m \n\x1b[34mEmployee:\x1b[0m ${newEmp.fname} ${newEmp.lname} \n\x1b[34mRole:\x1b[0m ${newEmp.role} \n\x1b[34mManaged by:\x1b[0m ${newEmp.man}?`,
                     validate(answer) {
                         if(!answer) {
                             return "Yes or no?"
@@ -264,13 +264,22 @@ async function toDo_f(){
                     }
                 },
             ])
-            const empRole = db.query("SELECT id FROM role WHERE title = ?",newEmp.role);
-            // const empMan = db.query("SELECT id FROM mployee WHERE title = ?",newEmp.role)
-            const values = {fname: newEmp.fname, lname: newEmp.lname,role_id: empRole,manager_id:12};
-            db.query("INSERT INTO employee SET ?",values,function(err,res){
-                if(err) throw err;
-            })
+            if(addConfEmp.confEmp == "Yes" || addConfEmp.confEmp === true){
+                [rows,fields] = await db.promise().query("SELECT id FROM role WHERE title = ?",newEmp.role);
+                let newRole = parseInt(rows[0].id);
 
+                [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,newEmp.man );
+                let newMan = parseInt(rows[0].id);
+                const values = {fname: newEmp.fname, lname: newEmp.lname,role_id: newRole,manager_id:newMan};
+                try{
+                    await db.promise().query("INSERT INTO employee SET ?",values)
+                    console.log(`${newEmp.fname} ${newEmp.lname} was \x1b[32msuccessfully\x1b[0m added\n`)
+                }catch{
+                    console.log(`${newEmp.fname} ${newEmp.lname} was \x1b[31mnot\x1b[0m added: ${err}\n`)
+                }
+            }else{
+                console.log(`${newEmp.fname} ${newEmp.lname} was \x1b[31mnot\x1b[0m added\n`)
+            }
         }else if(add.toAdd == "Department"){
             // let x = await allDept();
             // console.log(x);

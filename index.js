@@ -12,8 +12,9 @@ const { json } = require('express');
 
 // WHOLE TABLE LIST
 async function allStaff (){
-    const q = `SELECT concat(fname," ",lname) as Name 
-                FROM employee`;
+    const q = `SELECT concat(fname," ",lname) as Name, r.title as Role 
+                FROM employee as e
+                INNER JOIN role as r on e.role_id = r.id`;
     [rows,fields] = await db.promise().query(q);
     staffList = rows;
     return staffList;
@@ -453,7 +454,7 @@ async function toDo_f(){
                     {
                         type: "input",
                         name: "upfname",
-                        message: `What would you like to update ${selectEmp.emp} to?`,
+                        message: `What would you like to update ${selectEmp.emp}'s first name to?`,
                         validate(answer) {
                             if(!answer) {
                                 return "What is their new first name?"
@@ -464,7 +465,7 @@ async function toDo_f(){
                     {
                         type: "confirm",
                         name: "conf",
-                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}\x1b[0m to ${answers.upfname}?`;},
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}\x1b[0m's first name to ${answers.upfname}?`;},
                         validate(answer) {
                             if(!answer) {
                                 return "Yes or no?"
@@ -473,12 +474,8 @@ async function toDo_f(){
                         }
                     }
                 ]);
-
-
                 if(upFName.conf == "no" || upFName.conf === false){
-
                     console.log(`\x1b[31mNot\x1b[0m updated\n`)
-
                 }else{
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
@@ -495,10 +492,96 @@ async function toDo_f(){
                 return;
 
             }else if(selectEmp.empUp == "Last name"){
+                const upLName = await inquirer.prompt([
+                    {
+                        type: "input",
+                        name: "uplname",
+                        message: `What would you like to update ${selectEmp.emp}'s last name to?`,
+                        validate(answer) {
+                            if(!answer) {
+                                return "What is their new last name?"
+                            }
+                            return true
+                        }
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}\x1b[0m's last name to ${answers.uplname}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ]);
+                if(upLName.conf == "no" || upLName.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
+                    let empUpId = parseInt(rows[0].id);
+                    let upNewName = upLName.uplname;
+                    // const values = `[${}, ${}]`;
+                    try{
+                        await db.promise().query("UPDATE employee SET lname = ? WHERE id = ?",[upNewName,empUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+                return;
 
 
 
             }else if(selectEmp.empUp == "Their role"){
+                const roleList = await allRoles();
+                
+                len = roleList.length;
+                loop = 0;
+                let roleArr = [];
+                while(loop < len){
+                    roleArr.push(roleList[loop].Title);
+                    loop++;
+                };
+                const upRole = await inquirer.prompt([
+                    {
+                        type: "list",
+                        name: "uprole",
+                        message: `What would you like to update ${selectEmp.emp}'s role to?`,
+                        choices: roleArr,
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}\x1b[0m's role to ${answers.uprole}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ])
+                if(upRole.conf == "no" || upRole.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
+                    let empUpId = parseInt(rows[0].id);
+
+                    [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,upRole.uprole );
+                    let newRoleId = parseInt(rows[0].id);
+                    // const values = `[${}, ${}]`;
+                    try{
+                        await db.promise().query("UPDATE employee SET role_id = ? WHERE id = ?",[newRoleId,empUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+                return;
 
 
 

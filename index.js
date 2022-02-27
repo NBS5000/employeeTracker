@@ -12,9 +12,10 @@ const { json } = require('express');
 
 // WHOLE TABLE LIST
 async function allStaff (){
-    const q = `SELECT concat(fname," ",lname) as Name, r.title as Role 
-                FROM employee as e
-                INNER JOIN role as r on e.role_id = r.id`;
+    const q = `SELECT concat(e.fname," ",e.lname) as Name, r.title as Role, concat(m.fname," ",m.lname) as Manager
+                FROM role as r
+                INNER JOIN employee as e on e.role_id = r.id
+                INNER JOIN employee as m on e.manager_id = m.id`;
     [rows,fields] = await db.promise().query(q);
     staffList = rows;
     return staffList;
@@ -555,7 +556,7 @@ async function toDo_f(){
                     {
                         type: "confirm",
                         name: "conf",
-                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}\x1b[0m's role to ${answers.uprole}?`;},
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}'s\x1b[0m role to ${answers.uprole}?`;},
                         validate(answer) {
                             if(!answer) {
                                 return "Yes or no?"
@@ -586,6 +587,50 @@ async function toDo_f(){
 
 
             }else if(selectEmp.empUp == "Their manager"){
+
+
+                const upMan = await inquirer.prompt([
+                    {
+                        type: "list",
+                        name: "man",
+                        message: "Who would you like to change \x1b[35m${selectEmp.emp}'s\x1b[0m manager to?",
+                        choices: empArr,
+                    },
+                    {
+                        type: "confirm",
+                        name: "conf",
+                        message(answers) { return `\x1b[35mConfirm:\x1b[0m Update \x1b[35m${selectEmp.emp}'s\x1b[0m manager to ${answers.man}?`;},
+                        validate(answer) {
+                            if(!answer) {
+                                return "Yes or no?"
+                            }
+                            return true
+                        }
+                    }
+                ])
+
+                if(upMan.conf == "no" || upMan.conf === false){
+                    console.log(`\x1b[31mNot\x1b[0m updated\n`)
+                }else{
+                    [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
+                    let empUpId = parseInt(rows[0].id);
+
+                    [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,upMan.man );
+                    let manUpId = parseInt(rows[0].id);
+                    // const values = `[${}, ${}]`;
+                    try{
+                        await db.promise().query("UPDATE employee SET manager_id = ? WHERE id = ?",[manUpId,empUpId])
+                        console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
+                    }catch(err){
+                        console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
+                    }
+
+                }
+                return;
+
+
+
+
 
 
 

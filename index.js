@@ -3,7 +3,7 @@ const util = require('util');
 require('dotenv').config();
 
 const db = require("./db/conn.js");
-let staffList, roleList, deptList;
+let staffList, roleList, deptList, searchList;
 let cancel = false;
 const Table = require('easy-table');
 const { json } = require('express');
@@ -14,8 +14,15 @@ const { json } = require('express');
 async function allStaff (){
     const q = `SELECT concat(e.fname," ",e.lname) as Name, r.title as Role, concat(m.fname," ",m.lname) as Manager
                 FROM role as r
-                INNER JOIN employee as e on e.role_id = r.id
-                INNER JOIN employee as m on e.manager_id = m.id`;
+                LEFT JOIN employee as e on e.role_id = r.id
+                LEFT JOIN employee as m on e.manager_id = m.id`;
+    [rows,fields] = await db.promise().query(q);
+    staffList = rows;
+    return staffList;
+};
+async function justNameStaff(){
+    const q = `SELECT concat(e.fname," ",e.lname) as Name 
+                FROM employee as e`;
     [rows,fields] = await db.promise().query(q);
     staffList = rows;
     return staffList;
@@ -45,34 +52,64 @@ async function allDept (){
 
 
 ///////////////////////////////////////
-function staffInRole (role){
-    const q = `SELECT concat(fname," ",lname) as Name
-                FROM employee as e
-                INNER JOIN role as r ON e.role_id = r.id
-                WHERE r.title = ${role}`;
-                
-    return q;
-}
 
-function staffInDept (dept){
+
+////////// Specific searches /////////////
+async function empNoMan(){
     const q = `SELECT concat(fname," ",lname) as Name 
-                FROM employee as e
-                INNER JOIN role as r ON e.role_id = r.id
-                WHERE r.department_id = ?`;
-                
-    return;
-}
+                FROM employee
+                WHERE manager_id IS NULL`;
+    
+    [rows,fields] = await db.promise().query(q);
 
-function staffManagedBy (manager){
+    searchList = rows;
+    return searchList;
+}
+async function empNoDep(){
+    const q = `SELECT title as Role 
+                FROM role
+                WHERE department_id IS NULL`;
+    
+    [rows,fields] = await db.promise().query(q);
+
+    searchList = rows;
+    return searchList;
+}
+async function empNoRole(){
     const q = `SELECT concat(fname," ",lname) as Name 
+                FROM employee
+                WHERE role_id IS NULL`;
+    
+    [rows,fields] = await db.promise().query(q);
+
+    searchList = rows;
+    return searchList;
+}
+
+async function managerTeam(id){
+    const q = `SELECT concat(m.fname," ",m.lname) as Name 
+    FROM employee as e
+    WHERE e.manager_id = ?`;
+
+[rows,fields] = await db.promise().query(q);
+
+searchList = rows;
+return searchList;
+}
+async function allManagers(){
+    const q = `SELECT DISTINCT concat(m.fname," ",m.lname) as Name 
                 FROM employee as e
-                INNER JOIN role as r ON e.role_id = r.id
-                WHERE r.department_id = ?`;
-                
-    return q;
+                INNER JOIN employee as m ON e.manager_id = m.id
+                WHERE e.manager_id IS NOT NULL`;
+    
+    [rows,fields] = await db.promise().query(q);
+
+    searchList = rows;
+    return searchList;
 }
 
 
+///////////////// Stuff /////////////////////////////
 const updateStuff = () => {
     return inquirer.prompt([
         {
@@ -132,12 +169,26 @@ function viewStuff(){
                 "All Employees",
                 "All Roles",
                 "All Departments",
+                new inquirer.Separator(),
+                "Employees by Dept",
+                "Employees by Role",
+                "Employees by Manager",
+                new inquirer.Separator(),
+                "Department Budgets",
+                new inquirer.Separator(),
+                "Employees - No Manager",
+                "Employees - No Role",
+                "Roles - No Department",
+                new inquirer.Separator(),
                 "Cancel",
+                new inquirer.Separator(),
             ],
             name: 'toView',
         },
     ])
 }
+
+//////////////////////////////////////
 
 
 const addRole = (deptList) => {
@@ -287,7 +338,7 @@ async function toDo_f(){
         if(add.toAdd == "Cancel"){
             return;
         }else if(add.toAdd == "Employee"){
-            const manList = await allStaff();
+            const manList = await justNameStaff();
 
             len = manList.length;
             loop = 0;
@@ -411,30 +462,92 @@ async function toDo_f(){
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
 
+
+
+
         let view = await viewStuff();
 
         if(view.toView == "Cancel"){
             return;
         }else if(view.toView == "All Employees"){
             let x = await allStaff();
-            console.log(x);
+            console.table(x);
         }else if(view.toView == "All Departments"){
             let x = await allDept();
-            console.log(x);
+            console.table(x);
         }else if(view.toView == "All Roles"){
-
             let x = await allRoles();
+            console.table(x);
+        }else if(view.toView == "Employees by Dept"){
+            let x = await empByDept();
+            console.table(x);
+        }else if(view.toView == "Employees by Role"){
+            let x = await empByRole();
+            console.table(x);
+        }else if(view.toView == "Employees by Manager"){
+            const x = await allManagers();
 
-            // let t = new Table();
-            // x.forEach(function (role) {
-            //     t.cell('Title', role.Title),
-            //     t.cell('Salary', role.Salary),
-            //     t.newRow()
-            // })
-            // console.log(t);
-            console.log(x);
+            
+            len = x.length;
+            loop = 0;
+            let arr = [];
+            while(loop < len){
+                arr.push(x[loop].Name);
+                loop++;
+            };
+
+            const selectMan = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "man",
+                    message: "Which manager would you like to view?",
+                    choices: arr,
+                },
+
+            ]);
+
+            [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectMan.man );
+            const manId = parseInt(rows[0].id);
+            [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE manager_id = ?`,manId);
+            console.info("\n\x1b[32m",selectMan.man, "Team\x1b[0m",)
+            console.table(rows);
+        
+
+
+
+
+        }else if(view.toView == "Department Budgets"){
+            let x = await depBudgets();
+            console.table(x);
+        }else if(view.toView == "Employees - No Manager"){
+            let x = await empNoMan();
+            if(x.length == 0) {
+                console.log("Currently there are no employees without a manager\n");
+            }else{
+                console.table(x);
+            }
+        }else if(view.toView == "Roles - No Department"){
+            let x = await empNoDep();
+            if(x.length == 0) {
+                console.log("Currently there are no roles without a department\n");
+            }else{
+                console.table(x);
+            }
+        }else if(view.toView == "Employees - No Role"){
+            let x = await empNoRole();
+            if(x.length == 0) {
+                console.log("Currently there are no employees without a role\n");
+            }else{
+                console.table(x);
+            }
         }
         return;
+
+
+
+
+
+
 
     }else if(todo.todo == "Update something"){
         ////////////////////////////////////////////////////
@@ -447,7 +560,7 @@ async function toDo_f(){
         if(update.toUpdate == "Cancel"){
             return;
         }else if(update.toUpdate == "Employee"){
-            const updEmpList = await allStaff();
+            const updEmpList = await justNameStaff();
 
             len = updEmpList.length;
             loop = 0;
@@ -781,7 +894,6 @@ async function toDo_f(){
                 rArr.push(rList[loop].Title);
                 loop++;
             };
-            console.log(rArr);
             const upRole = await inquirer.prompt([
                 {
                     type: "list",
@@ -951,7 +1063,7 @@ async function toDo_f(){
         if(del.toDel == "Cancel"){
             return;
         }else if(del.toDel == "An Employee"){
-            const delEmpList = await allStaff();
+            const delEmpList = await justNameStaff();
 
             len = delEmpList.length;
             loop = 0;

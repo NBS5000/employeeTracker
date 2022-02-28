@@ -32,15 +32,13 @@ async function allRoles (){
 };
 
 async function allDept (){
-    let t;
-    const q = `SELECT name, concat("$",budget) as budget
+
+    const q = `SELECT name as Department, concat("$",budget) as budget
                 FROM department`;
     [rows,fields] = await db.promise().query(q);
 
     deptList = rows;
     return deptList;
-        
-        
 };
 
 
@@ -107,6 +105,41 @@ const addStuff = () => {
     ])
 }
 
+
+function deleteStuff(){
+    return inquirer.prompt([
+        {
+            type: "list",
+            message: "What would you like to delete?",
+            choices: [
+                "An Employee",
+                "A Role",
+                "A Department",
+                "Cancel",
+            ],
+            name: 'toDel',
+        },
+    ])
+}
+
+
+function viewStuff(){
+    return inquirer.prompt([
+        {
+            type: "list",
+            message: "What would you like to view?",
+            choices: [
+                "All Employees",
+                "All Roles",
+                "All Departments",
+                "Cancel",
+            ],
+            name: 'toView',
+        },
+    ])
+}
+
+
 const addRole = (deptList) => {
     return inquirer.prompt([
         {
@@ -172,7 +205,6 @@ const addDept = () => {
                 return true
             }
         },
-
     ])
 }
 const addEmployee = (staff,roles) => {
@@ -222,22 +254,6 @@ const addEmployee = (staff,roles) => {
 }
 
 
-function viewStuff(){
-    return inquirer.prompt([
-        {
-            type: "list",
-            message: "What would you like to view?",
-            choices: [
-                "All Employees",
-                "All Roles",
-                "All Departments",
-                "Cancel",
-            ],
-            name: 'toView',
-        },
-    ])
-}
-
 
 async function toDo_f(){
 
@@ -259,7 +275,11 @@ async function toDo_f(){
         cancel = true;
         return;
     }else if(todo.todo == "Add something"){
-
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
+        ///////////////// Add something ////////////////////
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         const add = await addStuff();
         let loop, len;
 
@@ -385,6 +405,11 @@ async function toDo_f(){
         return;
 
     }else if(todo.todo == "View details"){
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
+        ///////////////// View something ///////////////////
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
 
         let view = await viewStuff();
 
@@ -412,6 +437,11 @@ async function toDo_f(){
         return;
 
     }else if(todo.todo == "Update something"){
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
+        ///////////////// Update something /////////////////
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         let update = await updateStuff();
 
         if(update.toUpdate == "Cancel"){
@@ -535,8 +565,6 @@ async function toDo_f(){
                 }
                 return;
 
-
-
             }else if(selectEmp.empUp == "Their role"){
                 const roleList = await allRoles();
                 
@@ -585,10 +613,7 @@ async function toDo_f(){
                 }
                 return;
 
-
-
             }else if(selectEmp.empUp == "Their manager"){
-
 
                 const upMan = await inquirer.prompt([
                     {
@@ -914,6 +939,164 @@ async function toDo_f(){
 
 
     }else if(todo.todo == "Delete something"){
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
+        ///////////////// Delete something /////////////////
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
+
+        
+        let del = await deleteStuff();
+
+        if(del.toDel == "Cancel"){
+            return;
+        }else if(del.toDel == "An Employee"){
+            const delEmpList = await allStaff();
+
+            len = delEmpList.length;
+            loop = 0;
+            let empArr = [];
+            while(loop < len){
+                empArr.push(delEmpList[loop].Name);
+                loop++;
+            };
+
+            const selectEmp = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "emp",
+                    message: "Who would you like to remove from the system?",
+                    choices: empArr,
+                },
+                {
+                    type: "confirm",
+                    name: "conf",
+                    message(answers) { return `\x1b[35mConfirm:\x1b[0m Delete \x1b[35m${answers.emp}\x1b[0m from the system?\n\x1b[41m\x1b[33mThis is permanent and cannot be undone\x1b[0m`;},
+                    validate(answer) {
+                        if(!answer) {
+                            return "Yes or no?"
+                        }
+                        return true
+                    }
+                }
+            ]);
+
+
+            if(selectEmp.conf == "no" || selectEmp.conf === false){
+                console.log(`${selectEmp.emp} \x1b[31mnot\x1b[0m deleted\n`)
+            }else{
+                [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
+                let empDelId = parseInt(rows[0].id);
+                
+                try{
+                    await db.promise().query("DELETE FROM employee WHERE id = ?",[empDelId])
+                    console.log(`${selectEmp.emp} \x1b[32msuccessfully\x1b[0m deleted\n`)
+                }catch(err){
+                    console.log(`${selectEmp.emp} \x1b[31mnot\x1b[0m deleted: ${err}\n`)
+                }
+
+                
+                return;
+
+            }
+        }else if(del.toDel == "A Department"){
+            const delDepList = await allDept();
+
+            len = delDepList.length;
+            loop = 0;
+            let depArr = [];
+            while(loop < len){
+                depArr.push(delDepList[loop].Department);
+                loop++;
+            };
+
+            const selectDep = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "dep",
+                    message: "Which department would you like to remove from the system?",
+                    choices: depArr,
+                },
+                {
+                    type: "confirm",
+                    name: "conf",
+                    message(answers) { return `\x1b[35mConfirm:\x1b[0m Delete \x1b[35m${answers.dep}\x1b[0m from the system?\n\x1b[41m\x1b[33mThis is permanent and cannot be undone\x1b[0m`;},
+                    validate(answer) {
+                        if(!answer) {
+                            return "Yes or no?"
+                        }
+                        return true
+                    }
+                }
+            ]);
+
+
+            if(selectDep.conf == "no" || selectDep.conf === false){
+                console.log(`${selectDep.dep} \x1b[31mnot\x1b[0m deleted\n`)
+            }else{
+                [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,selectDep.dep );
+                let depDelId = parseInt(rows[0].id);
+                
+                try{
+                    await db.promise().query("DELETE FROM department WHERE id = ?",[depDelId])
+                    console.log(`${selectDep.dep} \x1b[32msuccessfully\x1b[0m deleted\n`)
+                }catch(err){
+                    console.log(`${selectDep.dep} \x1b[31mnot\x1b[0m deleted: ${err}\n`)
+                }
+
+                
+                return;
+
+            }
+        }else if(del.toDel == "A Role"){
+            const delRoleList = await allRoles();
+
+            len = delRoleList.length;
+            loop = 0;
+            let roleArr = [];
+            while(loop < len){
+                roleArr.push(delRoleList[loop].Title);
+                loop++;
+            };
+
+            const selectRole = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "role",
+                    message: "Which role would you like to remove from the system?",
+                    choices: roleArr,
+                },
+                {
+                    type: "confirm",
+                    name: "conf",
+                    message(answers) { return `\x1b[35mConfirm:\x1b[0m Delete \x1b[35m${answers.dep}\x1b[0m from the system?\n\x1b[41m\x1b[33mThis is permanent and cannot be undone\x1b[0m`;},
+                    validate(answer) {
+                        if(!answer) {
+                            return "Yes or no?"
+                        }
+                        return true
+                    }
+                }
+            ]);
+
+
+            if(selectRole.conf == "no" || selectRole.conf === false){
+                console.log(`${selectRole.role} \x1b[31mnot\x1b[0m deleted\n`)
+            }else{
+                [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,selectRole.role );
+                let roleDelId = parseInt(rows[0].id);
+                try{
+                    await db.promise().query("DELETE FROM role WHERE id = ?",[roleDelId])
+                    console.log(`${selectRole.role} \x1b[32msuccessfully\x1b[0m deleted\n`)
+                }catch(err){
+                    console.log(`${selectRole.role} \x1b[31mnot\x1b[0m deleted: ${err}\n`)
+                }
+
+                
+                return;
+
+            }
+        }
 
     }
 }

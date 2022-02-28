@@ -60,10 +60,13 @@ The end code is stored on Github, and publicly available and viewable. This resu
 
 As the acceptance criteria has been met and exceeded, the task is now complete. 
 
-
 Here is a screenshot of the application:
 
 > ![Screenshot of Employee Tracker CLI CMS](./assets/images/screen.png "Screenshot of Employee Tracker CLI CMS")
+
+You can view a demo video of the application [HERE](https://drive.google.com/file/d/19d3nlTuCMTSP1iSTsTLAEuD-YZ3ncz3V/view?usp=sharing)
+
+You can view the Github repo [HERE](https://github.com/NBS5000/employeeTracker)
 
 ---
 <p style="text-align:center;">Written by <span style="font-style:italic">Steve Barry</span> - Due date 28/2/2022</p>

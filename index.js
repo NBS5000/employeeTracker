@@ -378,7 +378,7 @@ async function toDo_f(){
             loop = 0;
             let dArr = [];
             while(loop < len){
-                dArr.push(dList[loop].name);
+                dArr.push(dList[loop].Department);
                 loop++;
             };
             const newRole = await addRole(dArr);
@@ -727,7 +727,7 @@ async function toDo_f(){
             loop = 0;
             let eArr = [];
             while(loop < len){
-                eArr.push(dList[loop].name);
+                eArr.push(dList[loop].Department);
                 loop++;
             };
             const upDept = await inquirer.prompt([
@@ -945,7 +945,7 @@ async function toDo_f(){
                 loop = 0;
                 let dArr = [];
                 while(loop < len){
-                    dArr.push(dList[loop].name);
+                    dArr.push(dList[loop].Department);
                     loop++;
                 };
                 const upRoleDept = await inquirer.prompt([

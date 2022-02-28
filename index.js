@@ -494,7 +494,7 @@ async function toDo_f(){
             ]);
             [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,selectR.role );
             const rId = parseInt(rows[0].id);
-            [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE manager_id = ?`,rId);
+            [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE role_id = ?`,rId);
             console.info("\n\x1b[32m",selectR.role, "List\x1b[0m",)
             console.table(rows);
         }else if(view.toView == "Department Budgets"){
@@ -503,21 +503,21 @@ async function toDo_f(){
         }else if(view.toView == "Employees - No Manager"){
             let x = await empNoMan();
             if(x.length == 0) {
-                console.log("Currently there are no employees without a manager\n");
+                console.log(`\x1b[42m\x1b[30mCurrently there are no employees without a manager\x1b[0m\n`);
             }else{
                 console.table(x);
             }
         }else if(view.toView == "Roles - No Department"){
             let x = await empNoDep();
             if(x.length == 0) {
-                console.log("Currently there are no roles without a department\n");
+                console.log(`\x1b[42m\x1b[30mCurrently there are no roles without a department\x1b[0m\n`);
             }else{
                 console.table(x);
             }
         }else if(view.toView == "Employees - No Role"){
             let x = await empNoRole();
             if(x.length == 0) {
-                console.log("Currently there are no employees without a role\n");
+                console.log(`\x1b[42m\x1b[30mCurrently there are no employees without a role\x1b[0m\n`);
             }else{
                 console.table(x);
             }
@@ -1137,6 +1137,7 @@ async function begin() {
     while(!cancel){   
         await toDo_f();
     }
+    console.info(`\x1b[47m\x1b[31mG\x1b[41m\x1b[33mo\x1b[43m\x1b[32mo\x1b[42m\x1b[34md\x1b[44m\x1b[36mb\x1b[45m\x1b[30my\x1b[41m\x1b[30me\x1b[0m`);
     process.exit();
 }
 begin();

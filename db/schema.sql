@@ -75,8 +75,8 @@ INSERT INTO employee (fname, lname,role_id,manager_id)
         ("Commander","Cody",9, 12),
         -- testing
         ("Rey","Skywalker",6, 3),
-        ("Kylo","Ren",10, 12),
-        ("FN2187","Finn",10, 12),
+        ("Kylo","Ren",10, 15),
+        ("FN2187","Finn",10, 15),
         -- media
         ("Boba","Fett", 7,4),
         ("Cad","Bane",11 ,18);

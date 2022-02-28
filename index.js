@@ -28,7 +28,7 @@ async function justNameStaff(){
     return staffList;
 };
 
-async function allRoles (){
+async function allRoles(){
 
     const q = `SELECT r.title as Title, concat("$",r.salary) as Salary, d.name as Department
                 FROM role as r
@@ -86,16 +86,6 @@ async function empNoRole(){
     return searchList;
 }
 
-async function managerTeam(id){
-    const q = `SELECT concat(m.fname," ",m.lname) as Name 
-    FROM employee as e
-    WHERE e.manager_id = ?`;
-
-[rows,fields] = await db.promise().query(q);
-
-searchList = rows;
-return searchList;
-}
 async function allManagers(){
     const q = `SELECT DISTINCT concat(m.fname," ",m.lname) as Name 
                 FROM employee as e
@@ -173,8 +163,6 @@ function viewStuff(){
                 "Employees by Dept",
                 "Employees by Role",
                 "Employees by Manager",
-                new inquirer.Separator(),
-                "Department Budgets",
                 new inquirer.Separator(),
                 "Employees - No Manager",
                 "Employees - No Role",
@@ -479,11 +467,39 @@ async function toDo_f(){
             let x = await allRoles();
             console.table(x);
         }else if(view.toView == "Employees by Dept"){
-            let x = await empByDept();
-            console.table(x);
-        }else if(view.toView == "Employees by Role"){
-            let x = await empByRole();
-            console.table(x);
+
+            const x = await allDept();
+
+            
+            len = x.length;
+            loop = 0;
+            let arr = [];
+            while(loop < len){
+                arr.push(x[loop].Department);
+                loop++;
+            };
+
+            const selectDep = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "dep",
+                    message: "Which department would you like to view?",
+                    choices: arr,
+                },
+
+            ]);
+
+            [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,selectDep.dep );
+            const depId = parseInt(rows[0].id);
+            [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee as e INNER JOIN role as r ON e.role_id = r.id INNER JOIN department as d ON r.department_id = d.id WHERE department_id = ?`,depId);
+            console.info("\n\x1b[32m",selectDep.dep, "Team\x1b[0m",)
+            console.table(rows);
+        
+
+
+
+
+
         }else if(view.toView == "Employees by Manager"){
             const x = await allManagers();
 
@@ -510,6 +526,39 @@ async function toDo_f(){
             const manId = parseInt(rows[0].id);
             [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE manager_id = ?`,manId);
             console.info("\n\x1b[32m",selectMan.man, "Team\x1b[0m",)
+            console.table(rows);
+        
+
+
+
+
+        }
+        else if(view.toView == "Employees by Role"){
+            const x = await allRoles();
+
+            
+            len = x.length;
+            loop = 0;
+            let arr = [];
+            while(loop < len){
+                arr.push(x[loop].Title);
+                loop++;
+            };
+
+            const selectR = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "role",
+                    message: "Which role would you like to view?",
+                    choices: arr,
+                },
+
+            ]);
+
+            [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,selectR.role );
+            const rId = parseInt(rows[0].id);
+            [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE manager_id = ?`,rId);
+            console.info("\n\x1b[32m",selectR.role, "List\x1b[0m",)
             console.table(rows);
         
 

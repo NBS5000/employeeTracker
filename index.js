@@ -1,56 +1,46 @@
 const inquirer = require('inquirer');
-const util = require('util');
 require('dotenv').config();
 
 const db = require("./db/conn.js");
 let staffList, roleList, deptList, searchList;
 let cancel = false;
-const Table = require('easy-table');
-const { json } = require('express');
 
 
 
-// WHOLE TABLE LIST
+/////////////// WHOLE TABLE LIST /////////////////
 async function allStaff (){
     const q = `SELECT concat(e.fname," ",e.lname) as Name, r.title as Role, concat(m.fname," ",m.lname) as Manager
                 FROM role as r
                 LEFT JOIN employee as e on e.role_id = r.id
                 LEFT JOIN employee as m on e.manager_id = m.id`;
     [rows,fields] = await db.promise().query(q);
-    staffList = rows;
-    return staffList;
+    searchList = rows;
+    return searchList;
 };
 async function justNameStaff(){
     const q = `SELECT concat(e.fname," ",e.lname) as Name 
                 FROM employee as e`;
     [rows,fields] = await db.promise().query(q);
-    staffList = rows;
-    return staffList;
+    searchList = rows;
+    return searchList;
 };
 
 async function allRoles(){
-
     const q = `SELECT r.title as Title, concat("$",r.salary) as Salary, d.name as Department
                 FROM role as r
                 INNER JOIN department as d ON r.department_id = d.id`;
     [rows,fields] = await db.promise().query(q);
-    roleList = rows;
-    return roleList;
+    searchList = rows;
+    return searchList;
 };
 
 async function allDept (){
-
     const q = `SELECT name as Department, concat("$",budget) as budget
                 FROM department`;
     [rows,fields] = await db.promise().query(q);
-
-    deptList = rows;
-    return deptList;
+    searchList = rows;
+    return searchList;
 };
-
-
-
-
 ///////////////////////////////////////
 
 
@@ -61,7 +51,6 @@ async function empNoMan(){
                 WHERE manager_id IS NULL`;
     
     [rows,fields] = await db.promise().query(q);
-
     searchList = rows;
     return searchList;
 }
@@ -69,9 +58,7 @@ async function empNoDep(){
     const q = `SELECT title as Role 
                 FROM role
                 WHERE department_id IS NULL`;
-    
     [rows,fields] = await db.promise().query(q);
-
     searchList = rows;
     return searchList;
 }
@@ -81,7 +68,6 @@ async function empNoRole(){
                 WHERE role_id IS NULL`;
     
     [rows,fields] = await db.promise().query(q);
-
     searchList = rows;
     return searchList;
 }
@@ -91,13 +77,11 @@ async function allManagers(){
                 FROM employee as e
                 INNER JOIN employee as m ON e.manager_id = m.id
                 WHERE e.manager_id IS NOT NULL`;
-    
     [rows,fields] = await db.promise().query(q);
-
     searchList = rows;
     return searchList;
 }
-
+///////////////////////////////////////
 
 ///////////////// Stuff /////////////////////////////
 const updateStuff = () => {
@@ -115,7 +99,6 @@ const updateStuff = () => {
         },
     ])
 }
-
 const addStuff = () => {
     return inquirer.prompt([
         {
@@ -131,8 +114,6 @@ const addStuff = () => {
         },
     ])
 }
-
-
 function deleteStuff(){
     return inquirer.prompt([
         {
@@ -148,7 +129,6 @@ function deleteStuff(){
         },
     ])
 }
-
 
 function viewStuff(){
     return inquirer.prompt([
@@ -175,10 +155,9 @@ function viewStuff(){
         },
     ])
 }
+//////////////////////////////////////////
 
-//////////////////////////////////////
-
-
+//////////////// Add functions ///////////
 const addRole = (deptList) => {
     return inquirer.prompt([
         {
@@ -248,7 +227,6 @@ const addDept = () => {
 }
 const addEmployee = (staff,roles) => {
     return inquirer.prompt([
-        // If user selects Employee
         {
             type: "input",
             message: "What is their \x1b[32mFirst\x1b[0m name?",
@@ -273,7 +251,6 @@ const addEmployee = (staff,roles) => {
                 return true
             }
         },
-
         {
             type: "list",
             name: "role",
@@ -291,11 +268,10 @@ const addEmployee = (staff,roles) => {
 
     ])
 }
+//////////////////////////////////////////
 
-
-
+///////// Main function //////////////////
 async function toDo_f(){
-
     const todo = await inquirer.prompt([
         {  
             type: "list",
@@ -321,13 +297,10 @@ async function toDo_f(){
         ////////////////////////////////////////////////////
         const add = await addStuff();
         let loop, len;
-
-
         if(add.toAdd == "Cancel"){
             return;
         }else if(add.toAdd == "Employee"){
             const manList = await justNameStaff();
-
             len = manList.length;
             loop = 0;
             let manArr = [];
@@ -336,7 +309,6 @@ async function toDo_f(){
                 loop++;
             };
             const roleList = await allRoles();
-
             len = roleList.length;
             loop = 0;
             let roleArr = [];
@@ -361,7 +333,6 @@ async function toDo_f(){
             if(addConfEmp.confEmp == "Yes" || addConfEmp.confEmp === true){
                 [rows,fields] = await db.promise().query("SELECT id FROM role WHERE title = ?",newEmp.role);
                 let newRole = parseInt(rows[0].id);
-
                 [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,newEmp.man );
                 let newMan = parseInt(rows[0].id);
                 const values = {fname: newEmp.fname, lname: newEmp.lname,role_id: newRole,manager_id:newMan};
@@ -391,7 +362,6 @@ async function toDo_f(){
                 },
             ])
             if(addConfDept.confDept == "Yes" || addConfDept.confDept === true){
-
                 const values = {name: newDept.dname, budget: newDept.budget};
                 try{
                     await db.promise().query("INSERT INTO department SET ?",values);
@@ -404,7 +374,6 @@ async function toDo_f(){
             }
         }else if(add.toAdd == "Role"){
             const dList = await allDept();
-
             len = dList.length;
             loop = 0;
             let dArr = [];
@@ -442,7 +411,6 @@ async function toDo_f(){
             }
         }
         return;
-
     }else if(todo.todo == "View details"){
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
@@ -450,11 +418,7 @@ async function toDo_f(){
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
 
-
-
-
         let view = await viewStuff();
-
         if(view.toView == "Cancel"){
             return;
         }else if(view.toView == "All Employees"){
@@ -467,10 +431,7 @@ async function toDo_f(){
             let x = await allRoles();
             console.table(x);
         }else if(view.toView == "Employees by Dept"){
-
             const x = await allDept();
-
-            
             len = x.length;
             loop = 0;
             let arr = [];
@@ -478,7 +439,6 @@ async function toDo_f(){
                 arr.push(x[loop].Department);
                 loop++;
             };
-
             const selectDep = await inquirer.prompt([
                 {
                     type: "list",
@@ -486,24 +446,14 @@ async function toDo_f(){
                     message: "Which department would you like to view?",
                     choices: arr,
                 },
-
             ]);
-
             [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,selectDep.dep );
             const depId = parseInt(rows[0].id);
             [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee as e INNER JOIN role as r ON e.role_id = r.id INNER JOIN department as d ON r.department_id = d.id WHERE department_id = ?`,depId);
             console.info("\n\x1b[32m",selectDep.dep, "Team\x1b[0m",)
             console.table(rows);
-        
-
-
-
-
-
         }else if(view.toView == "Employees by Manager"){
             const x = await allManagers();
-
-            
             len = x.length;
             loop = 0;
             let arr = [];
@@ -511,7 +461,6 @@ async function toDo_f(){
                 arr.push(x[loop].Name);
                 loop++;
             };
-
             const selectMan = await inquirer.prompt([
                 {
                     type: "list",
@@ -519,24 +468,15 @@ async function toDo_f(){
                     message: "Which manager would you like to view?",
                     choices: arr,
                 },
-
             ]);
-
             [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectMan.man );
             const manId = parseInt(rows[0].id);
             [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE manager_id = ?`,manId);
             console.info("\n\x1b[32m",selectMan.man, "Team\x1b[0m",)
             console.table(rows);
-        
-
-
-
-
         }
         else if(view.toView == "Employees by Role"){
             const x = await allRoles();
-
-            
             len = x.length;
             loop = 0;
             let arr = [];
@@ -544,7 +484,6 @@ async function toDo_f(){
                 arr.push(x[loop].Title);
                 loop++;
             };
-
             const selectR = await inquirer.prompt([
                 {
                     type: "list",
@@ -552,19 +491,12 @@ async function toDo_f(){
                     message: "Which role would you like to view?",
                     choices: arr,
                 },
-
             ]);
-
             [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,selectR.role );
             const rId = parseInt(rows[0].id);
             [rows,fields] = await db.promise().query(`SELECT concat(fname," ",lname) as Name FROM employee WHERE manager_id = ?`,rId);
             console.info("\n\x1b[32m",selectR.role, "List\x1b[0m",)
             console.table(rows);
-        
-
-
-
-
         }else if(view.toView == "Department Budgets"){
             let x = await depBudgets();
             console.table(x);
@@ -591,13 +523,6 @@ async function toDo_f(){
             }
         }
         return;
-
-
-
-
-
-
-
     }else if(todo.todo == "Update something"){
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
@@ -605,12 +530,10 @@ async function toDo_f(){
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
         let update = await updateStuff();
-
         if(update.toUpdate == "Cancel"){
             return;
         }else if(update.toUpdate == "Employee"){
             const updEmpList = await justNameStaff();
-
             len = updEmpList.length;
             loop = 0;
             let empArr = [];
@@ -618,7 +541,6 @@ async function toDo_f(){
                 empArr.push(updEmpList[loop].Name);
                 loop++;
             };
-
             const selectEmp = await inquirer.prompt([
                 {
                     type: "list",
@@ -640,7 +562,6 @@ async function toDo_f(){
                     ]
                 },
             ]);
-
             if(selectEmp.empUp == "Cancel"){
                 return;
             }else if(selectEmp.empUp == "First name"){
@@ -674,17 +595,14 @@ async function toDo_f(){
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
                     let upNewName = upFName.upfname;
-                    
                     try{
                         await db.promise().query("UPDATE employee SET fname = ? WHERE id = ?",[upNewName,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
                 return;
-
             }else if(selectEmp.empUp == "Last name"){
                 const upLName = await inquirer.prompt([
                     {
@@ -716,20 +634,16 @@ async function toDo_f(){
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
                     let upNewName = upLName.uplname;
-                    
                     try{
                         await db.promise().query("UPDATE employee SET lname = ? WHERE id = ?",[upNewName,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
                 return;
-
             }else if(selectEmp.empUp == "Their role"){
                 const roleList = await allRoles();
-                
                 len = roleList.length;
                 loop = 0;
                 let roleArr = [];
@@ -761,22 +675,17 @@ async function toDo_f(){
                 }else{
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
-
                     [rows,fields] = await db.promise().query(`SELECT id FROM role WHERE title LIKE ?`,upRole.uprole );
                     let newRoleId = parseInt(rows[0].id);
-                    
                     try{
                         await db.promise().query("UPDATE employee SET role_id = ? WHERE id = ?",[newRoleId,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
                 return;
-
             }else if(selectEmp.empUp == "Their manager"){
-
                 const upMan = await inquirer.prompt([
                     {
                         type: "list",
@@ -796,30 +705,24 @@ async function toDo_f(){
                         }
                     }
                 ])
-
                 if(upMan.conf == "no" || upMan.conf === false){
                     console.log(`\x1b[31mNot\x1b[0m updated\n`)
                 }else{
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                     let empUpId = parseInt(rows[0].id);
-
                     [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,upMan.man );
                     let manUpId = parseInt(rows[0].id);
-                    
                     try{
                         await db.promise().query("UPDATE employee SET manager_id = ? WHERE id = ?",[manUpId,empUpId])
                         console.log(`\x1b[32mSuccessfully\x1b[0m updated\n`)
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
                 return;
             }
         }else if(update.toUpdate == "Department"){
-
             const dList = await allDept();
-
             len = dList.length;
             loop = 0;
             let eArr = [];
@@ -845,8 +748,6 @@ async function toDo_f(){
                     ],
                 },
             ]);
-
-
             if(upDept.select == "Cancel"){
                 return;
             }else if(upDept.select == "Budget"){
@@ -858,7 +759,6 @@ async function toDo_f(){
                         validate(answer) {
                             if(isNaN(answer)){
                                 return "Enter a number, with no letters or other characters";
-            
                             }else if(!answer) {
                                 return "Their new budget, what is it?"
                             }
@@ -889,7 +789,6 @@ async function toDo_f(){
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
             }else if(upDept.select == "Name"){
                 const upDName = await inquirer.prompt([
@@ -928,14 +827,11 @@ async function toDo_f(){
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
-
                 return;
             }
         }else if(update.toUpdate == "Role"){
             const rList = await allRoles();
-            
             len = rList.length;
             loop = 0;
             let rArr = [];
@@ -962,8 +858,6 @@ async function toDo_f(){
                     ],
                 },
             ]);
-
-
             if(upRole.select == "Cancel"){
                 return;
             }else if(upRole.select == "Salary"){
@@ -975,7 +869,6 @@ async function toDo_f(){
                         validate(answer) {
                             if(isNaN(answer)){
                                 return "Enter a number, with no letters or other characters";
-            
                             }else if(!answer) {
                                 return "Their new salary, what is it?"
                             }
@@ -1006,7 +899,6 @@ async function toDo_f(){
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
             }else if(upRole.select == "Title"){
                 const upRTitle = await inquirer.prompt([
@@ -1045,13 +937,10 @@ async function toDo_f(){
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
                 return;
             }else if(upRole.select == "Department"){
-
                 const dList = await allDept();
-
                 len = dList.length;
                 loop = 0;
                 let dArr = [];
@@ -1091,29 +980,21 @@ async function toDo_f(){
                     }catch(err){
                         console.log(`\x1b[31mNot\x1b[0m updated: ${err}\n`)
                     }
-
                 }
                 return;
             }
-
         }
-
-
     }else if(todo.todo == "Delete something"){
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
         ///////////////// Delete something /////////////////
         ////////////////////////////////////////////////////
         ////////////////////////////////////////////////////
-
-        
         let del = await deleteStuff();
-
         if(del.toDel == "Cancel"){
             return;
         }else if(del.toDel == "An Employee"){
             const delEmpList = await justNameStaff();
-
             len = delEmpList.length;
             loop = 0;
             let empArr = [];
@@ -1121,7 +1002,6 @@ async function toDo_f(){
                 empArr.push(delEmpList[loop].Name);
                 loop++;
             };
-
             const selectEmp = await inquirer.prompt([
                 {
                     type: "list",
@@ -1141,28 +1021,21 @@ async function toDo_f(){
                     }
                 }
             ]);
-
-
             if(selectEmp.conf == "no" || selectEmp.conf === false){
                 console.log(`${selectEmp.emp} \x1b[31mnot\x1b[0m deleted\n`)
             }else{
                 [rows,fields] = await db.promise().query(`SELECT id FROM employee WHERE concat(fname," ",lname) LIKE ?`,selectEmp.emp );
                 let empDelId = parseInt(rows[0].id);
-                
                 try{
                     await db.promise().query("DELETE FROM employee WHERE id = ?",[empDelId])
                     console.log(`${selectEmp.emp} \x1b[32msuccessfully\x1b[0m deleted\n`)
                 }catch(err){
                     console.log(`${selectEmp.emp} \x1b[31mnot\x1b[0m deleted: ${err}\n`)
                 }
-
-                
                 return;
-
             }
         }else if(del.toDel == "A Department"){
             const delDepList = await allDept();
-
             len = delDepList.length;
             loop = 0;
             let depArr = [];
@@ -1170,7 +1043,6 @@ async function toDo_f(){
                 depArr.push(delDepList[loop].Department);
                 loop++;
             };
-
             const selectDep = await inquirer.prompt([
                 {
                     type: "list",
@@ -1190,28 +1062,21 @@ async function toDo_f(){
                     }
                 }
             ]);
-
-
             if(selectDep.conf == "no" || selectDep.conf === false){
                 console.log(`${selectDep.dep} \x1b[31mnot\x1b[0m deleted\n`)
             }else{
                 [rows,fields] = await db.promise().query(`SELECT id FROM department WHERE name LIKE ?`,selectDep.dep );
                 let depDelId = parseInt(rows[0].id);
-                
                 try{
                     await db.promise().query("DELETE FROM department WHERE id = ?",[depDelId])
                     console.log(`${selectDep.dep} \x1b[32msuccessfully\x1b[0m deleted\n`)
                 }catch(err){
                     console.log(`${selectDep.dep} \x1b[31mnot\x1b[0m deleted: ${err}\n`)
                 }
-
-                
                 return;
-
             }
         }else if(del.toDel == "A Role"){
             const delRoleList = await allRoles();
-
             len = delRoleList.length;
             loop = 0;
             let roleArr = [];
@@ -1219,7 +1084,6 @@ async function toDo_f(){
                 roleArr.push(delRoleList[loop].Title);
                 loop++;
             };
-
             const selectRole = await inquirer.prompt([
                 {
                     type: "list",
@@ -1239,8 +1103,6 @@ async function toDo_f(){
                     }
                 }
             ]);
-
-
             if(selectRole.conf == "no" || selectRole.conf === false){
                 console.log(`${selectRole.role} \x1b[31mnot\x1b[0m deleted\n`)
             }else{
@@ -1252,19 +1114,13 @@ async function toDo_f(){
                 }catch(err){
                     console.log(`${selectRole.role} \x1b[31mnot\x1b[0m deleted: ${err}\n`)
                 }
-
-                
                 return;
-
             }
         }
-
     }
 }
-
-
+//////////////// function for start of process ///////////
 async function begin() {
-
     console.info(`
     .---------------------------------------------------.
     |  \x1b[33m _        _       _                          _\x1b[0m   |
@@ -1277,16 +1133,10 @@ async function begin() {
     '---------------------------------------------------'
     
     `);
-
+    //////// loops until users exits
     while(!cancel){   
         await toDo_f();
-
-
     }
     process.exit();
-
-
-
 }
-
 begin();

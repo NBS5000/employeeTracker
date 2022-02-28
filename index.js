@@ -2,14 +2,14 @@ const inquirer = require('inquirer');
 require('dotenv').config();
 
 const db = require("./db/conn.js");
-let staffList, roleList, deptList, searchList;
+let searchList;
 let cancel = false;
 
 
 
 /////////////// WHOLE TABLE LIST /////////////////
 async function allStaff (){
-    const q = `SELECT concat(e.fname," ",e.lname) as Name, r.title as Role, concat(m.fname," ",m.lname) as Manager
+    const q = `SELECT e.id, concat(e.fname," ",e.lname) as Name, r.title as Role, concat(m.fname," ",m.lname) as Manager
                 FROM role as r
                 LEFT JOIN employee as e on e.role_id = r.id
                 LEFT JOIN employee as m on e.manager_id = m.id`;
@@ -26,7 +26,7 @@ async function justNameStaff(){
 };
 
 async function allRoles(){
-    const q = `SELECT r.title as Title, concat("$",r.salary) as Salary, d.name as Department
+    const q = `SELECT r.id, r.title as Title, concat("$",r.salary) as Salary, d.name as Department
                 FROM role as r
                 INNER JOIN department as d ON r.department_id = d.id`;
     [rows,fields] = await db.promise().query(q);
@@ -35,7 +35,7 @@ async function allRoles(){
 };
 
 async function allDept (){
-    const q = `SELECT name as Department, concat("$",budget) as budget
+    const q = `SELECT id, name as Department, concat("$",budget) as budget
                 FROM department`;
     [rows,fields] = await db.promise().query(q);
     searchList = rows;
